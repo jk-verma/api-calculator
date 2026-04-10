@@ -52,27 +52,27 @@ const designationConfig = {
       },
     },
   },
-  "IPS-2020": {
+  "IPS-2022": {
     designations: {
       "Assistant Professor Level 11": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template dashboard lists this post, but no threshold row is populated for IPS-2020.",
+        note: "IPS-2022 is available as a policy choice, but threshold values have not been entered yet.",
       },
       "Assistant Professor Level 12": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
+        note: "IPS-2022 is available as a policy choice, but threshold values have not been entered yet.",
       },
       "Assistant Professor Level 13A": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
+        note: "IPS-2022 is available as a policy choice, but threshold values have not been entered yet.",
       },
       "Associate Professor Level 13B": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
+        note: "IPS-2022 is available as a policy choice, but threshold values have not been entered yet.",
       },
       "Professor Level 14A": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
+        note: "IPS-2022 is available as a policy choice, but threshold values have not been entered yet.",
       },
     },
   },
@@ -625,6 +625,7 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   const combined = category2Grand + category3Grand;
   const category1Year = effectiveCategory1Year();
   const assessmentPeriod = priorAcademicYears(category1Year, 4);
+  const hasThresholdData = Object.values(thresholds).some((value) => value != null);
 
   document.querySelector("#selectedPolicyLabel").textContent = state.selectedPolicy;
   document.querySelector("#selectedDesignationLabel").textContent = state.selectedDesignation;
@@ -634,7 +635,7 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   document.querySelector("#thresholdCombined").textContent = formatThreshold(thresholds.combined);
   document.querySelector("#category1Scope").textContent = category1Year;
   document.querySelector("#assessmentPeriodLabel").textContent = `${assessmentPeriod[0]} to ${assessmentPeriod[assessmentPeriod.length - 1]}`;
-  document.querySelector("#thresholdNote").textContent = `${cfg.note} Academic year is derived from the eligibility date using 1 July to 30 June.`;
+  document.querySelector("#thresholdNote").textContent = `${cfg.note} Threshold criteria are shown according to the selected IPS. Academic year is derived from the eligibility date using 1 July to 30 June.`;
 
   const checks = [];
   if (thresholds.category1 != null) checks.push(category1Grand >= thresholds.category1);
@@ -643,8 +644,10 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   if (thresholds.combined != null) checks.push(combined >= thresholds.combined);
 
   let status = "Thresholds unavailable";
-  if (checks.length > 0) {
+  if (hasThresholdData && checks.length > 0) {
     status = checks.every(Boolean) ? "Thresholds met" : "Below threshold";
+  } else if (!hasThresholdData && state.selectedPolicy === "IPS-2022") {
+    status = "IPS-2022 thresholds pending";
   }
   document.querySelector("#thresholdStatus").textContent = status;
 }
