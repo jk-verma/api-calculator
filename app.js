@@ -591,8 +591,25 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   document.querySelector("#thresholdStatus").textContent = status;
 }
 
+function renderCapSummary() {
+  document.querySelector("#capCategory1A").textContent = caps.category1A;
+  document.querySelector("#capCategory1B").textContent = caps.category1B;
+  document.querySelector("#capCategory1C").textContent = caps.category1C;
+  document.querySelector("#capCategory2A").textContent = caps.category2A;
+  document.querySelector("#capCategory2B").textContent = caps.category2B;
+  document.querySelector("#capCategory2C").textContent = caps.category2C;
+
+  document.querySelector("#teachingApiCapMax").textContent = caps.category1A;
+  document.querySelector("#examApiCapMax").textContent = caps.category1B;
+  document.querySelector("#innovativeApiCapMax").textContent = caps.category1C;
+  document.querySelector("#cat2ACapMax").textContent = caps.category2A;
+  document.querySelector("#cat2BCapMax").textContent = caps.category2B;
+  document.querySelector("#cat2CCapMax").textContent = caps.category2C;
+}
+
 function render() {
   renderDesignationControls();
+  renderCapSummary();
   const teaching = renderTeaching();
   const validTeachingCount = state.teachingRows.filter((row) => row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
   const exam = renderExam(validTeachingCount);
