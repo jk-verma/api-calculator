@@ -262,7 +262,8 @@ function currentYear() {
 }
 
 function renderAcademicYearOptions() {
-  const selected = dom.academicYear.value || state.eligibilityDate || academicYears[0];
+  const derivedYear = state.eligibilityDate ? academicYearFromDate(state.eligibilityDate) : (dom.academicYear.value || academicYears[0]);
+  const selected = academicYears.includes(derivedYear) ? derivedYear : academicYears[0];
   dom.academicYear.innerHTML = academicYears
     .map((year) => `<option value="${year}" ${year === selected ? "selected" : ""}>${year}</option>`)
     .join("");
