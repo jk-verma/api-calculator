@@ -254,6 +254,23 @@ function currentYear() {
   return dom.academicYear.value;
 }
 
+function yearStart(yearLabel) {
+  return Number(String(yearLabel).split("-")[0]);
+}
+
+function priorAcademicYears(endYearLabel, span = 4) {
+  const end = yearStart(endYearLabel);
+  return Array.from({ length: span }, (_, index) => {
+    const start = end - (span - 1) + index;
+    const next = String(start + 1).slice(-2);
+    return `${start}-${next}`;
+  });
+}
+
+function inAssessmentPeriod(rowYear) {
+  return priorAcademicYears(currentYear(), 4).includes(rowYear);
+}
+
 function getSelectedDesignationConfig() {
   return designationConfig[state.selectedPolicy].designations[state.selectedDesignation];
 }
@@ -290,7 +307,7 @@ function escapeHtml(value) {
 }
 
 function addRow(key, value) {
-  state[key].push({ id: uid(), ...value });
+  state[key].push({ id: uid(), year: currentYear(), ...value });
 }
 
 function updateRow(key, id, patch) {
@@ -324,7 +341,8 @@ function examDerived(row) {
 }
 
 function renderTeaching() {
-  dom.teachingBody.innerHTML = state.teachingRows
+  const rows = state.teachingRows.filter((row) => row.year === currentYear());
+  dom.teachingBody.innerHTML = rows
     .map((row, index) => {
       const derived = teachingDerived(row);
       return `
@@ -340,16 +358,16 @@ function renderTeaching() {
           <td><input type="number" min="0" step="0.01" data-key="teachingRows" data-id="${row.id}" data-field="courseHours" value="${row.courseHours || ""}" placeholder="Hours"></td>
           <td class="readonly">${derived.totalCourseHours || ""}</td>
           <td class="readonly">${derived.apiScore ? format(derived.apiScore) : ""}</td>
-          <td class="readonly">${currentYear()}</td>
+          <td class="readonly">${row.year}</td>
           <td><button type="button" class="delete-button" data-remove-key="teachingRows" data-remove-id="${row.id}">Remove</button></td>
         </tr>
       `;
     })
     .join("");
 
-  const totalHours = state.teachingRows.reduce((sum, row) => sum + parseNumber(row.courseHours), 0);
-  const totalCourseHours = state.teachingRows.reduce((sum, row) => sum + teachingDerived(row).totalCourseHours, 0);
-  const api = state.teachingRows.reduce((sum, row) => sum + teachingDerived(row).apiScore, 0);
+  const totalHours = rows.reduce((sum, row) => sum + parseNumber(row.courseHours), 0);
+  const totalCourseHours = rows.reduce((sum, row) => sum + teachingDerived(row).totalCourseHours, 0);
+  const api = rows.reduce((sum, row) => sum + teachingDerived(row).apiScore, 0);
 
   document.querySelector("#teachingHours").textContent = round(totalHours);
   document.querySelector("#teachingCourseHours").textContent = round(totalCourseHours);
@@ -360,12 +378,13 @@ function renderTeaching() {
 }
 
 function renderExam(courseCount) {
+  const rows = state.examRows.filter((row) => row.year === currentYear());
   const qpsHours = courseCount * 10;
   const aseHours = courseCount * 20;
   const qpsScore = qpsHours / 10;
   const aseScore = aseHours / 10;
 
-  dom.examBody.innerHTML = state.examRows
+  dom.examBody.innerHTML = rows
     .map((row, index) => `
       <tr>
         <td>${index + 1}</td>
@@ -378,14 +397,14 @@ function renderExam(courseCount) {
         </td>
         <td><input type="number" min="0" step="0.01" data-key="examRows" data-id="${row.id}" data-field="hours" value="${row.hours || ""}" placeholder="Hours"></td>
         <td class="readonly">${row.activity && row.hours ? format(examDerived(row)) : ""}</td>
-        <td class="readonly">${currentYear()}</td>
+        <td class="readonly">${row.year}</td>
         <td><button type="button" class="delete-button" data-remove-key="examRows" data-remove-id="${row.id}">Remove</button></td>
       </tr>
     `)
     .join("");
 
-  const manualHours = state.examRows.reduce((sum, row) => sum + parseNumber(row.hours), 0);
-  const manualScore = state.examRows.reduce((sum, row) => sum + examDerived(row), 0);
+  const manualHours = rows.reduce((sum, row) => sum + parseNumber(row.hours), 0);
+  const manualScore = rows.reduce((sum, row) => sum + examDerived(row), 0);
   const totalHours = qpsHours + aseHours + manualHours;
   const api = qpsScore + aseScore + manualScore;
 
@@ -401,7 +420,8 @@ function renderExam(courseCount) {
 }
 
 function renderInnovative() {
-  dom.innovativeBody.innerHTML = state.teachingRows
+  const rows = state.teachingRows.filter((row) => row.year === currentYear());
+  dom.innovativeBody.innerHTML = rows
     .map((row, index) => {
       const derived = teachingDerived(row);
       return `
@@ -411,13 +431,13 @@ function renderInnovative() {
           <td>${escapeHtml(row.courseIn || "")}</td>
           <td>${row.courseHours || ""}</td>
           <td>${derived.innovativeHours ? format(derived.innovativeHours) : ""}</td>
-          <td>${currentYear()}</td>
+          <td>${row.year}</td>
         </tr>
       `;
     })
     .join("");
 
-  const innovativeHours = state.teachingRows.reduce((sum, row) => sum + teachingDerived(row).innovativeHours, 0);
+  const innovativeHours = rows.reduce((sum, row) => sum + teachingDerived(row).innovativeHours, 0);
   const api = innovativeHours / 10;
 
   document.querySelector("#innovativeHours").textContent = format(innovativeHours);
@@ -428,7 +448,8 @@ function renderInnovative() {
 }
 
 function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, pointsFn, includeCount }) {
-  body.innerHTML = state[key]
+  const rows = state[key].filter((row) => inAssessmentPeriod(row.year));
+  body.innerHTML = rows
     .map((row, index) => {
       const baseScore = row.type ? scoreMap[row.type] || 0 : 0;
       const usesCount = includeCount && row.type === "GD/PI/VIVA";
@@ -456,14 +477,14 @@ function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, poi
             </select>
           </td>
           ${countCols}
-          <td class="readonly">${currentYear()}</td>
+          <td class="readonly">${row.year}</td>
           <td><button type="button" class="delete-button" data-remove-key="${key}" data-remove-id="${row.id}">Remove</button></td>
         </tr>
       `;
     })
     .join("");
 
-  const total = state[key].reduce((sum, row) => {
+  const total = rows.reduce((sum, row) => {
     const score = row.type ? scoreMap[row.type] || 0 : 0;
     const finalScore = includeCount && row.type === "GD/PI/VIVA" ? parseNumber(row.count) * score : score;
     return sum + pointsFn(finalScore);
@@ -475,7 +496,8 @@ function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, poi
 }
 
 function renderCat3A() {
-  dom.cat3ABody.innerHTML = state.cat3ARows
+  const rows = state.cat3ARows.filter((row) => inAssessmentPeriod(row.year));
+  dom.cat3ABody.innerHTML = rows
     .map((row, index) => {
       const authorOptions = row.classification ? Object.keys(options.cat3A[row.classification]) : [];
       const points = row.classification && row.authorType ? options.cat3A[row.classification][row.authorType] || 0 : 0;
@@ -499,14 +521,14 @@ function renderCat3A() {
             </select>
           </td>
           <td class="readonly">${points ? format(points) : ""}</td>
-          <td class="readonly">${currentYear()}</td>
+          <td class="readonly">${row.year}</td>
           <td><button type="button" class="delete-button" data-remove-key="cat3ARows" data-remove-id="${row.id}">Remove</button></td>
         </tr>
       `;
     })
     .join("");
 
-  const total = state.cat3ARows.reduce((sum, row) => {
+  const total = rows.reduce((sum, row) => {
     if (!row.classification || !row.authorType) return sum;
     return sum + (options.cat3A[row.classification][row.authorType] || 0);
   }, 0);
@@ -516,7 +538,8 @@ function renderCat3A() {
 }
 
 function renderCat3B() {
-  dom.cat3BBody.innerHTML = state.cat3BRows
+  const rows = state.cat3BRows.filter((row) => inAssessmentPeriod(row.year));
+  dom.cat3BBody.innerHTML = rows
     .map((row, index) => {
       const typeMap = row.category ? options.cat3B[row.category] : {};
       const points = row.category && row.type ? typeMap[row.type] || 0 : 0;
@@ -538,14 +561,14 @@ function renderCat3B() {
             </select>
           </td>
           <td class="readonly">${points ? format(points) : ""}</td>
-          <td class="readonly">${currentYear()}</td>
+          <td class="readonly">${row.year}</td>
           <td><button type="button" class="delete-button" data-remove-key="cat3BRows" data-remove-id="${row.id}">Remove</button></td>
         </tr>
       `;
     })
     .join("");
 
-  const total = state.cat3BRows.reduce((sum, row) => {
+  const total = rows.reduce((sum, row) => {
     if (!row.category || !row.type) return sum;
     return sum + (options.cat3B[row.category][row.type] || 0);
   }, 0);
@@ -570,6 +593,7 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   const cfg = getSelectedDesignationConfig();
   const thresholds = cfg.thresholds;
   const combined = category2Grand + category3Grand;
+  const assessmentPeriod = priorAcademicYears(currentYear(), 4);
 
   document.querySelector("#selectedPolicyLabel").textContent = state.selectedPolicy;
   document.querySelector("#selectedDesignationLabel").textContent = state.selectedDesignation;
@@ -577,6 +601,8 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   document.querySelector("#thresholdCategory2").textContent = formatThreshold(thresholds.category2);
   document.querySelector("#thresholdCategory3").textContent = formatThreshold(thresholds.category3);
   document.querySelector("#thresholdCombined").textContent = formatThreshold(thresholds.combined);
+  document.querySelector("#category1Scope").textContent = currentYear();
+  document.querySelector("#assessmentPeriodLabel").textContent = `${assessmentPeriod[0]} to ${assessmentPeriod[assessmentPeriod.length - 1]}`;
   document.querySelector("#thresholdNote").textContent = cfg.note;
 
   const checks = [];
@@ -612,7 +638,7 @@ function render() {
   renderDesignationControls();
   renderCapSummary();
   const teaching = renderTeaching();
-  const validTeachingCount = state.teachingRows.filter((row) => row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
+  const validTeachingCount = state.teachingRows.filter((row) => row.year === currentYear() && row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
   const exam = renderExam(validTeachingCount);
   const innovative = renderInnovative();
 

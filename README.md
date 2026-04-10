@@ -18,6 +18,8 @@ Template-guided dynamic features:
 - Policy selector with all designation levels shown on the template dashboard.
 - Designation-aware threshold display based on the template lookup sheet.
 - Explicit handling of template gaps where threshold rows are not populated.
+- Category 1 is evaluated for the selected academic year only.
+- Category 2 and Category 3 are evaluated over the rolling 4-year assessment period ending in the selected academic year.
 
 Workbook formula source:
 - The uploaded workbook contains `Dashboard`, `Lookup`, and `Template` sheets.
