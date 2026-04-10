@@ -7,6 +7,26 @@ const caps = {
   category2C: 15,
 };
 
+const templateFormulaReference = {
+  category1A_totalCourseHours: '=IF(OR(C5="",D5="",E5=""),"",IF(D5="Post Graduate",ROUND(E5*7/3,0),IF(D5="Under Graduate",ROUND(ROUND(E5*7/3,0)/2,1),"")))',
+  category1A_api: '=IF(F5="","",ROUND(F5/10,2))',
+  category1B_qpsHours: '=COUNTA(C5:C9)*10',
+  category1B_qpsScore: '=ROUND(E16/10,2)',
+  category1B_aseHours: '=COUNTA(C5:C9)*20',
+  category1B_aseScore: '=ROUND(E17/10,2)',
+  category1B_manualScore: '=IF(OR(D18="",E18=""),"",ROUND(E18/10,2))',
+  category1C_hours: '=IF(E36="","",ROUND(E36/3,2))',
+  category1C_api: '=ROUND(F41/10,2)',
+  category2A_score: '=IFERROR(VLOOKUP(D51,Cat2A,2,FALSE),"")',
+  category2A_points: '=IF(E51="","",E51/10)',
+  category2B_score: '=IF(OR(D78="",E78=""),"",E78*IFERROR(VLOOKUP(D78,Cat2B,2,FALSE),""))',
+  category2B_points: '=IF(F78="","",F78/10)',
+  category2C_score: '=IFERROR(VLOOKUP(D95,Cat2C,2,FALSE),"")',
+  category2C_points: '=IF(E95="","",E95/10)',
+  category3A_points: '=IF(OR(F114="",G114=""),"",SUMIFS(Lookup!$C$40:$C$57,Lookup!$A$40:$A$57,F114,Lookup!$B$40:$B$57,G114))',
+  category3B_points: '=IF(OR(D120="",E120=""),"",SUMIFS(Lookup!$G$40:$G$81,Lookup!$E$40:$E$81,D120,Lookup!$F$40:$F$81,E120))',
+};
+
 const designationConfig = {
   "IPS-2017": {
     designations: {
@@ -32,27 +52,27 @@ const designationConfig = {
       },
     },
   },
-  "IPS-2022": {
+  "IPS-2020": {
     designations: {
       "Assistant Professor Level 11": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template dashboard lists this post, but no threshold row is populated for IPS-2022.",
+        note: "The template dashboard lists this post, but no threshold row is populated for IPS-2020.",
       },
       "Assistant Professor Level 12": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
       },
       "Assistant Professor Level 13A": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
       },
       "Associate Professor Level 13B": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
       },
       "Professor Level 14A": {
         thresholds: { category1: null, category2: null, category3: null, combined: null },
-        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+        note: "The template lookup sheet includes an IPS-2020 section, but threshold values are blank.",
       },
     },
   },
