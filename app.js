@@ -226,6 +226,7 @@ const state = {
   selectedPolicy: "IPS-2017",
   selectedDesignation: "Assistant Professor Level 11",
   eligibilityDate: "",
+  assessmentPeriodEnd: "",
   teachingRows: [],
   examRows: [],
   cat2ARows: [],
@@ -245,6 +246,7 @@ const dom = {
   designationSelect: document.querySelector("#designationSelect"),
   eligibilityDate: document.querySelector("#eligibilityDate"),
   academicYear: document.querySelector("#academicYear"),
+  assessmentPeriodEnd: document.querySelector("#assessmentPeriodEnd"),
   teachingBody: document.querySelector("#teachingBody"),
   examBody: document.querySelector("#examBody"),
   innovativeBody: document.querySelector("#innovativeBody"),
@@ -269,6 +271,15 @@ function renderAcademicYearOptions() {
     .join("");
 }
 
+function renderAssessmentPeriodOptions() {
+  const fallback = state.assessmentPeriodEnd || effectiveCategory1Year();
+  const validOptions = academicYears.filter((year) => yearStart(year) >= 2024);
+  const selected = validOptions.includes(fallback) ? fallback : validOptions[0];
+  dom.assessmentPeriodEnd.innerHTML = validOptions
+    .map((year) => `<option value="${year}" ${year === selected ? "selected" : ""}>${year}</option>`)
+    .join("");
+}
+
 function yearStart(yearLabel) {
   return Number(String(yearLabel).split("-")[0]);
 }
@@ -288,6 +299,10 @@ function effectiveCategory1Year() {
   return academicYearFromDate(state.eligibilityDate || dom.eligibilityDate.value);
 }
 
+function effectiveAssessmentEndYear() {
+  return state.assessmentPeriodEnd || dom.assessmentPeriodEnd.value || effectiveCategory1Year();
+}
+
 function priorAcademicYears(endYearLabel, span = 4) {
   const end = yearStart(endYearLabel);
   return Array.from({ length: span }, (_, index) => {
@@ -298,7 +313,7 @@ function priorAcademicYears(endYearLabel, span = 4) {
 }
 
 function inAssessmentPeriod(rowYear) {
-  return priorAcademicYears(effectiveCategory1Year(), 4).includes(rowYear);
+  return priorAcademicYears(effectiveAssessmentEndYear(), 4).includes(rowYear);
 }
 
 function getSelectedDesignationConfig() {
@@ -624,7 +639,8 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   const thresholds = cfg.thresholds;
   const combined = category2Grand + category3Grand;
   const category1Year = effectiveCategory1Year();
-  const assessmentPeriod = priorAcademicYears(category1Year, 4);
+  const assessmentEndYear = effectiveAssessmentEndYear();
+  const assessmentPeriod = priorAcademicYears(assessmentEndYear, 4);
   const hasThresholdData = Object.values(thresholds).some((value) => value != null);
 
   document.querySelector("#selectedPolicyLabel").textContent = state.selectedPolicy;
@@ -670,7 +686,6 @@ function renderCapSummary() {
 
 function render() {
   renderAcademicYearOptions();
-  renderDesignationControls();
   if (dom.eligibilityDate.value !== state.eligibilityDate) {
     state.eligibilityDate = dom.eligibilityDate.value;
   }
@@ -678,6 +693,14 @@ function render() {
   if (dom.academicYear.value !== derivedYear) {
     dom.academicYear.value = derivedYear;
   }
+  if (!state.assessmentPeriodEnd) {
+    state.assessmentPeriodEnd = derivedYear;
+  }
+  renderAssessmentPeriodOptions();
+  if (dom.assessmentPeriodEnd.value !== state.assessmentPeriodEnd) {
+    dom.assessmentPeriodEnd.value = state.assessmentPeriodEnd;
+  }
+  renderDesignationControls();
   renderCapSummary();
   const teaching = renderTeaching();
   const validTeachingCount = state.teachingRows.filter((row) => row.year === effectiveCategory1Year() && row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
@@ -762,6 +785,13 @@ dom.designationSelect.addEventListener("change", (event) => {
 });
 dom.eligibilityDate.addEventListener("change", (event) => {
   state.eligibilityDate = event.target.value;
+  if (!state.assessmentPeriodEnd) {
+    state.assessmentPeriodEnd = academicYearFromDate(event.target.value);
+  }
+  render();
+});
+dom.assessmentPeriodEnd.addEventListener("change", (event) => {
+  state.assessmentPeriodEnd = event.target.value;
   render();
 });
 
