@@ -19,7 +19,7 @@ const templateFormulaReference = {
   category1C_api: '=ROUND(F41/10,2)',
   category2A_score: '=IFERROR(VLOOKUP(D51,Cat2A,2,FALSE),"")',
   category2A_points: '=IF(E51="","",E51/10)',
-  category2B_score: '=IF(OR(D78="",E78=""),"",E78*IFERROR(VLOOKUP(D78,Cat2B,2,FALSE),""))',
+  category2B_score: 'GD/PI/VIVA uses count × 2; all other duty types use the fixed lookup score directly.',
   category2B_points: '=IF(F78="","",F78/10)',
   category2C_score: '=IFERROR(VLOOKUP(D95,Cat2C,2,FALSE),"")',
   category2C_points: '=IF(E95="","",E95/10)',
@@ -431,11 +431,12 @@ function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, poi
   body.innerHTML = state[key]
     .map((row, index) => {
       const baseScore = row.type ? scoreMap[row.type] || 0 : 0;
-      const score = includeCount ? parseNumber(row.count) * baseScore : baseScore;
+      const usesCount = includeCount && row.type === "GD/PI/VIVA";
+      const score = usesCount ? parseNumber(row.count) * baseScore : baseScore;
       const points = pointsFn(score);
       const countCols = includeCount
         ? `
-          <td><input type="number" min="0" step="0.01" data-key="${key}" data-id="${row.id}" data-field="count" value="${row.count || ""}" placeholder="Count"></td>
+          <td><input type="number" min="0" step="0.01" data-key="${key}" data-id="${row.id}" data-field="count" value="${row.count || ""}" placeholder="${usesCount ? "Duty count" : "Not required"}" ${usesCount ? "" : "disabled"}></td>
           <td class="readonly">${score ? format(score) : ""}</td>
           <td class="readonly">${points ? format(points) : ""}</td>
         `
@@ -464,7 +465,7 @@ function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, poi
 
   const total = state[key].reduce((sum, row) => {
     const score = row.type ? scoreMap[row.type] || 0 : 0;
-    const finalScore = includeCount ? parseNumber(row.count) * score : score;
+    const finalScore = includeCount && row.type === "GD/PI/VIVA" ? parseNumber(row.count) * score : score;
     return sum + pointsFn(finalScore);
   }, 0);
 
@@ -706,6 +707,7 @@ document.body.addEventListener("change", (event) => {
     const patch = { [field]: target.value };
     if (field === "classification") patch.authorType = "";
     if (field === "category") patch.type = "";
+    if (key === "cat2BRows" && field === "type" && target.value !== "GD/PI/VIVA") patch.count = "";
     updateRow(key, id, patch);
     return;
   }
