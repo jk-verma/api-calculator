@@ -7,6 +7,57 @@ const caps = {
   category2C: 15,
 };
 
+const designationConfig = {
+  "IPS-2017": {
+    designations: {
+      "Assistant Professor Level 11": {
+        thresholds: { category1: null, category2: null, category3: null, combined: null },
+        note: "The template dashboard lists this post, but threshold values are not provided in the lookup table.",
+      },
+      "Assistant Professor Level 12": {
+        thresholds: { category1: 80, category2: 70, category3: 70, combined: 160 },
+        note: "Threshold values are taken from the template lookup sheet.",
+      },
+      "Assistant Professor Level 13A": {
+        thresholds: { category1: 75, category2: 70, category3: 100, combined: 190 },
+        note: "Threshold values are taken from the template lookup sheet.",
+      },
+      "Associate Professor Level 13B": {
+        thresholds: { category1: 70, category2: 70, category3: 120, combined: 220 },
+        note: "Threshold values are taken from the template lookup sheet.",
+      },
+      "Professor Level 14A": {
+        thresholds: { category1: 70, category2: 70, category3: 140, combined: 230 },
+        note: "Threshold values are taken from the template lookup sheet.",
+      },
+    },
+  },
+  "IPS-2022": {
+    designations: {
+      "Assistant Professor Level 11": {
+        thresholds: { category1: null, category2: null, category3: null, combined: null },
+        note: "The template dashboard lists this post, but no threshold row is populated for IPS-2022.",
+      },
+      "Assistant Professor Level 12": {
+        thresholds: { category1: null, category2: null, category3: null, combined: null },
+        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+      },
+      "Assistant Professor Level 13A": {
+        thresholds: { category1: null, category2: null, category3: null, combined: null },
+        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+      },
+      "Associate Professor Level 13B": {
+        thresholds: { category1: null, category2: null, category3: null, combined: null },
+        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+      },
+      "Professor Level 14A": {
+        thresholds: { category1: null, category2: null, category3: null, combined: null },
+        note: "The template includes an IPS-2020/2022 section, but threshold values are blank.",
+      },
+    },
+  },
+};
+
 const options = {
   courseIn: ["Post Graduate", "Under Graduate"],
   examModes: ["Examination Duty", "Viva", "Evaluation", "Invigilation"],
@@ -152,6 +203,8 @@ const options = {
 };
 
 const state = {
+  selectedPolicy: "IPS-2017",
+  selectedDesignation: "Assistant Professor Level 11",
   teachingRows: [],
   examRows: [],
   cat2ARows: [],
@@ -162,6 +215,8 @@ const state = {
 };
 
 const dom = {
+  policySelect: document.querySelector("#policySelect"),
+  designationSelect: document.querySelector("#designationSelect"),
   academicYear: document.querySelector("#academicYear"),
   teachingBody: document.querySelector("#teachingBody"),
   examBody: document.querySelector("#examBody"),
@@ -177,6 +232,14 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 function currentYear() {
   return dom.academicYear.value;
+}
+
+function getSelectedDesignationConfig() {
+  return designationConfig[state.selectedPolicy].designations[state.selectedDesignation];
+}
+
+function formatThreshold(value) {
+  return value == null ? "N/A" : String(value);
 }
 
 function round(value) {
@@ -470,7 +533,46 @@ function renderCat3B() {
   return total;
 }
 
+function renderDesignationControls() {
+  const policyOptions = Object.keys(designationConfig)
+    .map((policy) => `<option value="${policy}" ${policy === state.selectedPolicy ? "selected" : ""}>${policy}</option>`)
+    .join("");
+  dom.policySelect.innerHTML = policyOptions;
+
+  const designationOptions = Object.keys(designationConfig[state.selectedPolicy].designations)
+    .map((designation) => `<option value="${designation}" ${designation === state.selectedDesignation ? "selected" : ""}>${designation}</option>`)
+    .join("");
+  dom.designationSelect.innerHTML = designationOptions;
+}
+
+function renderThresholdSummary(category1Grand, category2Grand, category3Grand) {
+  const cfg = getSelectedDesignationConfig();
+  const thresholds = cfg.thresholds;
+  const combined = category2Grand + category3Grand;
+
+  document.querySelector("#selectedPolicyLabel").textContent = state.selectedPolicy;
+  document.querySelector("#selectedDesignationLabel").textContent = state.selectedDesignation;
+  document.querySelector("#thresholdCategory1").textContent = formatThreshold(thresholds.category1);
+  document.querySelector("#thresholdCategory2").textContent = formatThreshold(thresholds.category2);
+  document.querySelector("#thresholdCategory3").textContent = formatThreshold(thresholds.category3);
+  document.querySelector("#thresholdCombined").textContent = formatThreshold(thresholds.combined);
+  document.querySelector("#thresholdNote").textContent = cfg.note;
+
+  const checks = [];
+  if (thresholds.category1 != null) checks.push(category1Grand >= thresholds.category1);
+  if (thresholds.category2 != null) checks.push(category2Grand >= thresholds.category2);
+  if (thresholds.category3 != null) checks.push(category3Grand >= thresholds.category3);
+  if (thresholds.combined != null) checks.push(combined >= thresholds.combined);
+
+  let status = "Thresholds unavailable";
+  if (checks.length > 0) {
+    status = checks.every(Boolean) ? "Thresholds met" : "Below threshold";
+  }
+  document.querySelector("#thresholdStatus").textContent = status;
+}
+
 function render() {
+  renderDesignationControls();
   const teaching = renderTeaching();
   const validTeachingCount = state.teachingRows.filter((row) => row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
   const exam = renderExam(validTeachingCount);
@@ -520,6 +622,7 @@ function render() {
   document.querySelector("#category2Grand").textContent = format(category2Grand);
   document.querySelector("#category3Grand").textContent = format(category3Grand);
   document.querySelector("#overallGrand").textContent = format(category1Grand + category2Grand + category3Grand);
+  renderThresholdSummary(category1Grand, category2Grand, category3Grand);
 }
 
 function seed() {
@@ -539,6 +642,18 @@ document.querySelector("#addCat2BRow").addEventListener("click", () => { addRow(
 document.querySelector("#addCat2CRow").addEventListener("click", () => { addRow("cat2CRows", { detail: "", type: "" }); render(); });
 document.querySelector("#addCat3ARow").addEventListener("click", () => { addRow("cat3ARows", { title: "", link: "", journal: "", classification: "", authorType: "" }); render(); });
 document.querySelector("#addCat3BRow").addEventListener("click", () => { addRow("cat3BRows", { detail: "", category: "", type: "" }); render(); });
+dom.policySelect.addEventListener("change", (event) => {
+  state.selectedPolicy = event.target.value;
+  const allowedDesignations = Object.keys(designationConfig[state.selectedPolicy].designations);
+  if (!allowedDesignations.includes(state.selectedDesignation)) {
+    [state.selectedDesignation] = allowedDesignations;
+  }
+  render();
+});
+dom.designationSelect.addEventListener("change", (event) => {
+  state.selectedDesignation = event.target.value;
+  render();
+});
 
 document.body.addEventListener("input", (event) => {
   const target = event.target;

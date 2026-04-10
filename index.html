@@ -15,6 +15,10 @@
         <p class="lede">A browser-based version of the API workbook with live calculations for Category 1, Category 2, and Category 3.</p>
       </div>
       <div class="hero-card">
+        <label for="policySelect">Promotion policy</label>
+        <select id="policySelect"></select>
+        <label for="designationSelect">Designation</label>
+        <select id="designationSelect"></select>
         <label for="academicYear">Academic year</label>
         <select id="academicYear">
           <option>2025-26</option>
@@ -22,16 +26,54 @@
           <option>2027-28</option>
           <option>2028-29</option>
         </select>
-        <p class="hero-note">All rows added on this page will use the selected year.</p>
+        <p class="hero-note">All rows added on this page will use the selected year and selected designation context.</p>
       </div>
     </header>
 
     <main class="content">
+      <section class="summary-grid threshold-grid">
+        <article class="summary-card">
+          <span>Selected Policy</span>
+          <strong id="selectedPolicyLabel">IPS-2017</strong>
+        </article>
+        <article class="summary-card">
+          <span>Selected Designation</span>
+          <strong id="selectedDesignationLabel">Assistant Professor Level 11</strong>
+        </article>
+        <article class="summary-card">
+          <span>Category 1 Threshold</span>
+          <strong id="thresholdCategory1">N/A</strong>
+        </article>
+        <article class="summary-card">
+          <span>Category 2 + 3 Threshold</span>
+          <strong id="thresholdCombined">N/A</strong>
+        </article>
+      </section>
+
       <section class="summary-grid">
         <article class="summary-card"><span>Category 1</span><strong id="category1Grand">0.00</strong></article>
         <article class="summary-card"><span>Category 2</span><strong id="category2Grand">0.00</strong></article>
         <article class="summary-card"><span>Category 3</span><strong id="category3Grand">0.00</strong></article>
         <article class="summary-card total-card"><span>Overall API</span><strong id="overallGrand">0.00</strong></article>
+      </section>
+
+      <section class="summary-grid threshold-grid">
+        <article class="summary-card">
+          <span>Category 2 Threshold</span>
+          <strong id="thresholdCategory2">N/A</strong>
+        </article>
+        <article class="summary-card">
+          <span>Category 3 Threshold</span>
+          <strong id="thresholdCategory3">N/A</strong>
+        </article>
+        <article class="summary-card">
+          <span>Threshold Status</span>
+          <strong id="thresholdStatus">Waiting</strong>
+        </article>
+        <article class="summary-card">
+          <span>Template Note</span>
+          <strong id="thresholdNote">Using template guidance</strong>
+        </article>
       </section>
 
       <section class="panel">
