@@ -635,7 +635,7 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   document.querySelector("#thresholdCombined").textContent = formatThreshold(thresholds.combined);
   document.querySelector("#category1Scope").textContent = category1Year;
   document.querySelector("#assessmentPeriodLabel").textContent = `${assessmentPeriod[0]} to ${assessmentPeriod[assessmentPeriod.length - 1]}`;
-  document.querySelector("#thresholdNote").textContent = `${cfg.note} Threshold criteria are shown according to the selected IPS. Academic year is derived from the eligibility date using 1 July to 30 June.`;
+  document.querySelector("#thresholdNote").textContent = `${cfg.note} Thresholds for Category 1, Category 2, Category 3, and Category 2+3 are shown according to the selected IPS and designation. Academic year is derived from the eligibility date using 1 July to 30 June.`;
 
   const checks = [];
   if (thresholds.category1 != null) checks.push(category1Grand >= thresholds.category1);
