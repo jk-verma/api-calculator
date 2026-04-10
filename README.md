@@ -1,6 +1,15 @@
 # API Calculator
 
-IIFT API calculator workbook prepared from the provided scoring method and references.
+Browser-based IIFT API calculator prepared from the provided scoring method and workbook logic.
 
 Files:
-- `API Calculator Sheet - IIFT.xlsx`: working Excel calculator template for Category 1, with supporting lookup-driven sections for later categories.
+- `index.html`: single-page web application.
+- `styles.css`: application styling.
+- `app.js`: scoring logic and live calculations.
+- `API Calculator Sheet - IIFT.xlsx`: reference workbook version.
+
+Usage:
+1. Open `index.html` in a browser.
+2. Add rows for each category as needed.
+3. Enter course details, duties, and research activity.
+4. Read live totals from the summary cards and section totals.

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IIFT API Calculator</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">IIFT Promotion Support</p>
+        <h1>IIFT API Calculator</h1>
+        <p class="lede">A browser-based version of the API workbook with live calculations for Category 1, Category 2, and Category 3.</p>
+      </div>
+      <div class="hero-card">
+        <label for="academicYear">Academic year</label>
+        <select id="academicYear">
+          <option>2025-26</option>
+          <option>2026-27</option>
+          <option>2027-28</option>
+          <option>2028-29</option>
+        </select>
+        <p class="hero-note">All rows added on this page will use the selected year.</p>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="summary-grid">
+        <article class="summary-card"><span>Category 1</span><strong id="category1Grand">0.00</strong></article>
+        <article class="summary-card"><span>Category 2</span><strong id="category2Grand">0.00</strong></article>
+        <article class="summary-card"><span>Category 3</span><strong id="category3Grand">0.00</strong></article>
+        <article class="summary-card total-card"><span>Overall API</span><strong id="overallGrand">0.00</strong></article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Category 1</p>
+            <h2>Teaching, Examination and Innovative Teaching</h2>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <div>
+              <h3>1.A Direct Teaching</h3>
+              <p>Course name and course hours are manual. Total course hours and API score are automatic.</p>
+            </div>
+            <button type="button" class="ghost-button" id="addTeachingRow">Add Course</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Course Name</th>
+                  <th>Course In</th>
+                  <th>Course Hours</th>
+                  <th>Total Course Hours</th>
+                  <th>API Score</th>
+                  <th>AY</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="teachingBody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>Total Hours: <strong id="teachingHours">0</strong></span>
+            <span>Total Course Hours: <strong id="teachingCourseHours">0</strong></span>
+            <span>API 1.A: <strong id="teachingApi">0.00</strong></span>
+            <span>Capped: <strong id="teachingApiCapped">0.00</strong></span>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <div>
+              <h3>1.B Examination Duties / Question Paper Setting / Evaluation</h3>
+              <p>Question paper setting and answer script evaluation are automatic. Other activities use manual hours and automatic score.</p>
+            </div>
+            <button type="button" class="ghost-button" id="addExamRow">Add Activity</button>
+          </div>
+          <div class="formula-strip">
+            <article><span>Question Paper Setting Hours</span><strong id="qpsHours">0</strong></article>
+            <article><span>Question Paper Setting Score</span><strong id="qpsScore">0.00</strong></article>
+            <article><span>Answer Script Evaluation Hours</span><strong id="aseHours">0</strong></article>
+            <article><span>Answer Script Evaluation Score</span><strong id="aseScore">0.00</strong></article>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Course / Activity Detail</th>
+                  <th>Activity</th>
+                  <th>Hours</th>
+                  <th>Score</th>
+                  <th>AY</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="examBody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>Total Hours: <strong id="examHours">0</strong></span>
+            <span>API 1.B: <strong id="examApi">0.00</strong></span>
+            <span>Capped: <strong id="examApiCapped">0.00</strong></span>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <div>
+              <h3>1.C Innovative Teaching</h3>
+              <p>Automatically derived from direct teaching entries as one-third of entered course hours.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Course Name</th>
+                  <th>Course In</th>
+                  <th>Course Hours</th>
+                  <th>Innovative Teaching Hours</th>
+                  <th>AY</th>
+                </tr>
+              </thead>
+              <tbody id="innovativeBody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>Total Innovative Teaching Hours: <strong id="innovativeHours">0.00</strong></span>
+            <span>API 1.C: <strong id="innovativeApi">0.00</strong></span>
+            <span>Capped: <strong id="innovativeApiCapped">0.00</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Category 2</p>
+            <h2>Co-Curricular, Administrative and Professional Development</h2>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <h3>2.A Co-Curricular</h3>
+            <button type="button" class="ghost-button" id="addCat2ARow">Add Entry</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Supporting Details</th>
+                  <th>Activity</th>
+                  <th>Score</th>
+                  <th>Points</th>
+                  <th>AY</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cat2ABody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>API 2.A: <strong id="cat2ATotal">0.00</strong></span>
+            <span>Capped: <strong id="cat2ACapped">0.00</strong></span>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <h3>2.B Corporate / Academic Administrative</h3>
+            <button type="button" class="ghost-button" id="addCat2BRow">Add Entry</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Supporting Details</th>
+                  <th>Duty Type</th>
+                  <th>Duty Count</th>
+                  <th>Score</th>
+                  <th>Points</th>
+                  <th>AY</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cat2BBody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>API 2.B: <strong id="cat2BTotal">0.00</strong></span>
+            <span>Capped: <strong id="cat2BCapped">0.00</strong></span>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <h3>2.C Professional Development</h3>
+            <button type="button" class="ghost-button" id="addCat2CRow">Add Entry</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Supporting Details</th>
+                  <th>Type</th>
+                  <th>Score</th>
+                  <th>Points</th>
+                  <th>AY</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cat2CBody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>API 2.C: <strong id="cat2CTotal">0.00</strong></span>
+            <span>Capped: <strong id="cat2CCapped">0.00</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Category 3</p>
+            <h2>Research Papers, Awards, Books and Projects</h2>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <h3>3.A Research Papers in Journals</h3>
+            <button type="button" class="ghost-button" id="addCat3ARow">Add Paper</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Paper Title</th>
+                  <th>Paper Link</th>
+                  <th>Journal Name</th>
+                  <th>Classification</th>
+                  <th>Author Type</th>
+                  <th>Points</th>
+                  <th>AY</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cat3ABody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>API 3.A: <strong id="cat3ATotal">0.00</strong></span>
+          </div>
+        </div>
+
+        <div class="subpanel">
+          <div class="subpanel-header">
+            <h3>3.B Awards / Books / Projects / Research Guidance</h3>
+            <button type="button" class="ghost-button" id="addCat3BRow">Add Entry</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>S. No.</th>
+                  <th>Supporting Information / Link</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th>Points</th>
+                  <th>AY</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cat3BBody"></tbody>
+            </table>
+          </div>
+          <div class="totals-bar">
+            <span>API 3.B: <strong id="cat3BTotal">0.00</strong></span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
