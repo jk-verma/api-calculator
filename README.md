@@ -19,7 +19,8 @@ Template-guided dynamic features:
 - Designation-aware threshold display based on the template lookup sheet.
 - Explicit handling of template gaps where threshold rows are not populated.
 - Category 1 is evaluated for the selected academic year only.
-- Category 2 and Category 3 are evaluated over the rolling 4-year assessment period ending in the selected academic year.
+- Category 2 and Category 3 are evaluated over the rolling 4-year assessment period ending in the academic year derived from the date of eligibility.
+- Academic year is derived using the template assumption of `1 July - 30 June`.
 
 Workbook formula source:
 - The uploaded workbook contains `Dashboard`, `Lookup`, and `Template` sheets.

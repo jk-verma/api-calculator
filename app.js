@@ -225,6 +225,7 @@ const options = {
 const state = {
   selectedPolicy: "IPS-2017",
   selectedDesignation: "Assistant Professor Level 11",
+  eligibilityDate: "",
   teachingRows: [],
   examRows: [],
   cat2ARows: [],
@@ -237,6 +238,7 @@ const state = {
 const dom = {
   policySelect: document.querySelector("#policySelect"),
   designationSelect: document.querySelector("#designationSelect"),
+  eligibilityDate: document.querySelector("#eligibilityDate"),
   academicYear: document.querySelector("#academicYear"),
   teachingBody: document.querySelector("#teachingBody"),
   examBody: document.querySelector("#examBody"),
@@ -258,6 +260,21 @@ function yearStart(yearLabel) {
   return Number(String(yearLabel).split("-")[0]);
 }
 
+function academicYearFromDate(dateValue) {
+  if (!dateValue) return currentYear();
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return currentYear();
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const start = month >= 7 ? year : year - 1;
+  const next = String(start + 1).slice(-2);
+  return `${start}-${next}`;
+}
+
+function effectiveCategory1Year() {
+  return academicYearFromDate(state.eligibilityDate || dom.eligibilityDate.value);
+}
+
 function priorAcademicYears(endYearLabel, span = 4) {
   const end = yearStart(endYearLabel);
   return Array.from({ length: span }, (_, index) => {
@@ -268,7 +285,7 @@ function priorAcademicYears(endYearLabel, span = 4) {
 }
 
 function inAssessmentPeriod(rowYear) {
-  return priorAcademicYears(currentYear(), 4).includes(rowYear);
+  return priorAcademicYears(effectiveCategory1Year(), 4).includes(rowYear);
 }
 
 function getSelectedDesignationConfig() {
@@ -307,7 +324,7 @@ function escapeHtml(value) {
 }
 
 function addRow(key, value) {
-  state[key].push({ id: uid(), year: currentYear(), ...value });
+  state[key].push({ id: uid(), year: effectiveCategory1Year(), ...value });
 }
 
 function updateRow(key, id, patch) {
@@ -341,7 +358,7 @@ function examDerived(row) {
 }
 
 function renderTeaching() {
-  const rows = state.teachingRows.filter((row) => row.year === currentYear());
+  const rows = state.teachingRows.filter((row) => row.year === effectiveCategory1Year());
   dom.teachingBody.innerHTML = rows
     .map((row, index) => {
       const derived = teachingDerived(row);
@@ -378,7 +395,7 @@ function renderTeaching() {
 }
 
 function renderExam(courseCount) {
-  const rows = state.examRows.filter((row) => row.year === currentYear());
+  const rows = state.examRows.filter((row) => row.year === effectiveCategory1Year());
   const qpsHours = courseCount * 10;
   const aseHours = courseCount * 20;
   const qpsScore = qpsHours / 10;
@@ -420,7 +437,7 @@ function renderExam(courseCount) {
 }
 
 function renderInnovative() {
-  const rows = state.teachingRows.filter((row) => row.year === currentYear());
+  const rows = state.teachingRows.filter((row) => row.year === effectiveCategory1Year());
   dom.innovativeBody.innerHTML = rows
     .map((row, index) => {
       const derived = teachingDerived(row);
@@ -593,7 +610,8 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   const cfg = getSelectedDesignationConfig();
   const thresholds = cfg.thresholds;
   const combined = category2Grand + category3Grand;
-  const assessmentPeriod = priorAcademicYears(currentYear(), 4);
+  const category1Year = effectiveCategory1Year();
+  const assessmentPeriod = priorAcademicYears(category1Year, 4);
 
   document.querySelector("#selectedPolicyLabel").textContent = state.selectedPolicy;
   document.querySelector("#selectedDesignationLabel").textContent = state.selectedDesignation;
@@ -601,9 +619,9 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   document.querySelector("#thresholdCategory2").textContent = formatThreshold(thresholds.category2);
   document.querySelector("#thresholdCategory3").textContent = formatThreshold(thresholds.category3);
   document.querySelector("#thresholdCombined").textContent = formatThreshold(thresholds.combined);
-  document.querySelector("#category1Scope").textContent = currentYear();
+  document.querySelector("#category1Scope").textContent = category1Year;
   document.querySelector("#assessmentPeriodLabel").textContent = `${assessmentPeriod[0]} to ${assessmentPeriod[assessmentPeriod.length - 1]}`;
-  document.querySelector("#thresholdNote").textContent = cfg.note;
+  document.querySelector("#thresholdNote").textContent = `${cfg.note} Academic year is derived from the eligibility date using 1 July to 30 June.`;
 
   const checks = [];
   if (thresholds.category1 != null) checks.push(category1Grand >= thresholds.category1);
@@ -636,9 +654,16 @@ function renderCapSummary() {
 
 function render() {
   renderDesignationControls();
+  if (dom.eligibilityDate.value !== state.eligibilityDate) {
+    state.eligibilityDate = dom.eligibilityDate.value;
+  }
+  const derivedYear = effectiveCategory1Year();
+  if (dom.academicYear.value !== derivedYear) {
+    dom.academicYear.value = derivedYear;
+  }
   renderCapSummary();
   const teaching = renderTeaching();
-  const validTeachingCount = state.teachingRows.filter((row) => row.year === currentYear() && row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
+  const validTeachingCount = state.teachingRows.filter((row) => row.year === effectiveCategory1Year() && row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
   const exam = renderExam(validTeachingCount);
   const innovative = renderInnovative();
 
@@ -716,6 +741,10 @@ dom.policySelect.addEventListener("change", (event) => {
 });
 dom.designationSelect.addEventListener("change", (event) => {
   state.selectedDesignation = event.target.value;
+  render();
+});
+dom.eligibilityDate.addEventListener("change", (event) => {
+  state.eligibilityDate = event.target.value;
   render();
 });
 
