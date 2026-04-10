@@ -23,13 +23,21 @@
         <input id="eligibilityDate" type="date">
         <label for="academicYear">Academic year</label>
         <select id="academicYear"></select>
-        <label for="assessmentPeriodEnd">Assessment period end year</label>
-        <select id="assessmentPeriodEnd"></select>
-        <p class="hero-note">Category 1 follows the academic year of eligibility. Category 2 and 3 use the chosen 4-year assessment period.</p>
+        <p class="hero-note">Choose the relevant IPS, designation, date of eligibility, and assessment academic years. Data entry year options will appear before Category 1.</p>
       </div>
     </header>
 
     <main class="content">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Assessment Setup</p>
+            <h2>Assessment Period Academic Years</h2>
+          </div>
+        </div>
+        <div class="chip-panel" id="assessmentYearsChooser"></div>
+      </section>
+
       <section class="summary-grid threshold-grid">
         <article class="summary-card">
           <span>Selected Policy</span>
@@ -83,6 +91,16 @@
           <span>Template Note</span>
           <strong id="thresholdNote">Using template guidance</strong>
         </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Data Entry Year</p>
+            <h2>Fill Data Year By Year</h2>
+          </div>
+        </div>
+        <div class="chip-panel" id="entryYearChooser"></div>
       </section>
 
       <section class="panel">

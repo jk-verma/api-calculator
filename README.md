@@ -21,7 +21,8 @@ Template-guided dynamic features:
 - Category 1 is evaluated for the selected academic year only.
 - Category 2 and Category 3 are evaluated over the rolling 4-year assessment period ending in the academic year derived from the date of eligibility.
 - Academic year is derived using the template assumption of `1 July - 30 June`.
-- The app now also lets you choose the assessment-period end year directly for Category 2 and Category 3.
+- The app now lets you choose the assessment-period academic years directly.
+- Separate year options appear before Category 1 so data can be filled year by year for the relevant academic years.
 
 Workbook formula source:
 - The uploaded workbook contains `Dashboard`, `Lookup`, and `Template` sheets.

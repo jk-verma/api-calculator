@@ -226,7 +226,8 @@ const state = {
   selectedPolicy: "IPS-2017",
   selectedDesignation: "Assistant Professor Level 11",
   eligibilityDate: "",
-  assessmentPeriodEnd: "",
+  selectedAssessmentYears: [],
+  activeEntryYear: "",
   teachingRows: [],
   examRows: [],
   cat2ARows: [],
@@ -246,7 +247,8 @@ const dom = {
   designationSelect: document.querySelector("#designationSelect"),
   eligibilityDate: document.querySelector("#eligibilityDate"),
   academicYear: document.querySelector("#academicYear"),
-  assessmentPeriodEnd: document.querySelector("#assessmentPeriodEnd"),
+  assessmentYearsChooser: document.querySelector("#assessmentYearsChooser"),
+  entryYearChooser: document.querySelector("#entryYearChooser"),
   teachingBody: document.querySelector("#teachingBody"),
   examBody: document.querySelector("#examBody"),
   innovativeBody: document.querySelector("#innovativeBody"),
@@ -260,7 +262,7 @@ const dom = {
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 function currentYear() {
-  return dom.academicYear.value;
+  return dom.academicYear.value || academicYears[0];
 }
 
 function renderAcademicYearOptions() {
@@ -271,12 +273,10 @@ function renderAcademicYearOptions() {
     .join("");
 }
 
-function renderAssessmentPeriodOptions() {
-  const fallback = state.assessmentPeriodEnd || effectiveCategory1Year();
-  const validOptions = academicYears.filter((year) => yearStart(year) >= 2024);
-  const selected = validOptions.includes(fallback) ? fallback : validOptions[0];
-  dom.assessmentPeriodEnd.innerHTML = validOptions
-    .map((year) => `<option value="${year}" ${year === selected ? "selected" : ""}>${year}</option>`)
+function renderAssessmentYearChooser() {
+  const selected = new Set(state.selectedAssessmentYears);
+  dom.assessmentYearsChooser.innerHTML = academicYears
+    .map((year) => `<button type="button" class="year-chip ${selected.has(year) ? "active" : ""}" data-assessment-year="${year}">${year}</button>`)
     .join("");
 }
 
@@ -299,8 +299,10 @@ function effectiveCategory1Year() {
   return academicYearFromDate(state.eligibilityDate || dom.eligibilityDate.value);
 }
 
-function effectiveAssessmentEndYear() {
-  return state.assessmentPeriodEnd || dom.assessmentPeriodEnd.value || effectiveCategory1Year();
+function effectiveAssessmentYears() {
+  return state.selectedAssessmentYears.length
+    ? [...state.selectedAssessmentYears].sort((a, b) => yearStart(a) - yearStart(b))
+    : priorAcademicYears(effectiveCategory1Year(), 4);
 }
 
 function priorAcademicYears(endYearLabel, span = 4) {
@@ -313,7 +315,25 @@ function priorAcademicYears(endYearLabel, span = 4) {
 }
 
 function inAssessmentPeriod(rowYear) {
-  return priorAcademicYears(effectiveAssessmentEndYear(), 4).includes(rowYear);
+  return effectiveAssessmentYears().includes(rowYear);
+}
+
+function relevantEntryYears() {
+  return Array.from(new Set([effectiveCategory1Year(), ...effectiveAssessmentYears()])).sort((a, b) => yearStart(a) - yearStart(b));
+}
+
+function activeEntryYear() {
+  return state.activeEntryYear || effectiveCategory1Year();
+}
+
+function renderEntryYearChooser() {
+  const years = relevantEntryYears();
+  if (!years.includes(state.activeEntryYear)) {
+    state.activeEntryYear = years[0];
+  }
+  dom.entryYearChooser.innerHTML = years
+    .map((year) => `<button type="button" class="year-chip ${year === state.activeEntryYear ? "active" : ""}" data-entry-year="${year}">${year}</button>`)
+    .join("");
 }
 
 function getSelectedDesignationConfig() {
@@ -352,7 +372,7 @@ function escapeHtml(value) {
 }
 
 function addRow(key, value) {
-  state[key].push({ id: uid(), year: effectiveCategory1Year(), ...value });
+  state[key].push({ id: uid(), year: activeEntryYear(), ...value });
 }
 
 function updateRow(key, id, patch) {
@@ -385,8 +405,54 @@ function examDerived(row) {
   return parseNumber(row.hours) / 10;
 }
 
+function calcTeachingTotals(rows) {
+  const { totalHours, totalCourseHours, api } = calcTeachingTotals(rows);
+  return { totalHours, totalCourseHours, api, capped: Math.min(api, caps.category1A) };
+}
+
+function calcExamTotals(teachingRows, examRows) {
+  const courseCount = teachingRows.filter((row) => row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
+  const qpsHours = courseCount * 10;
+  const aseHours = courseCount * 20;
+  const qpsScore = qpsHours / 10;
+  const aseScore = aseHours / 10;
+  const manualHours = examRows.reduce((sum, row) => sum + parseNumber(row.hours), 0);
+  const manualScore = examRows.reduce((sum, row) => sum + examDerived(row), 0);
+  const totalHours = qpsHours + aseHours + manualHours;
+  const api = qpsScore + aseScore + manualScore;
+  return { courseCount, qpsHours, aseHours, qpsScore, aseScore, manualHours, manualScore, totalHours, api, capped: Math.min(api, caps.category1B) };
+}
+
+function calcInnovativeTotals(rows) {
+  const innovativeHours = rows.reduce((sum, row) => sum + teachingDerived(row).innovativeHours, 0);
+  const api = innovativeHours / 10;
+  return { innovativeHours, api, capped: Math.min(api, caps.category1C) };
+}
+
+function calcLookupTotal(rows, scoreMap, pointsFn, includeCount) {
+  return rows.reduce((sum, row) => {
+    const score = row.type ? scoreMap[row.type] || 0 : 0;
+    const finalScore = includeCount && row.type === "GD/PI/VIVA" ? parseNumber(row.count) * score : score;
+    return sum + pointsFn(finalScore);
+  }, 0);
+}
+
+function calcCat3ATotal(rows) {
+  return rows.reduce((sum, row) => {
+    if (!row.classification || !row.authorType) return sum;
+    return sum + (options.cat3A[row.classification][row.authorType] || 0);
+  }, 0);
+}
+
+function calcCat3BTotal(rows) {
+  return rows.reduce((sum, row) => {
+    if (!row.category || !row.type) return sum;
+    return sum + (options.cat3B[row.category][row.type] || 0);
+  }, 0);
+}
+
 function renderTeaching() {
-  const rows = state.teachingRows.filter((row) => row.year === effectiveCategory1Year());
+  const rows = state.teachingRows.filter((row) => row.year === activeEntryYear());
   dom.teachingBody.innerHTML = rows
     .map((row, index) => {
       const derived = teachingDerived(row);
@@ -423,11 +489,10 @@ function renderTeaching() {
 }
 
 function renderExam(courseCount) {
-  const rows = state.examRows.filter((row) => row.year === effectiveCategory1Year());
-  const qpsHours = courseCount * 10;
-  const aseHours = courseCount * 20;
-  const qpsScore = qpsHours / 10;
-  const aseScore = aseHours / 10;
+  const rows = state.examRows.filter((row) => row.year === activeEntryYear());
+  const teachingRows = state.teachingRows.filter((row) => row.year === activeEntryYear());
+  const examTotals = calcExamTotals(teachingRows, rows);
+  const { qpsHours, aseHours, qpsScore, aseScore, totalHours, api } = examTotals;
 
   dom.examBody.innerHTML = rows
     .map((row, index) => `
@@ -448,11 +513,6 @@ function renderExam(courseCount) {
     `)
     .join("");
 
-  const manualHours = rows.reduce((sum, row) => sum + parseNumber(row.hours), 0);
-  const manualScore = rows.reduce((sum, row) => sum + examDerived(row), 0);
-  const totalHours = qpsHours + aseHours + manualHours;
-  const api = qpsScore + aseScore + manualScore;
-
   document.querySelector("#qpsHours").textContent = round(qpsHours);
   document.querySelector("#qpsScore").textContent = format(qpsScore);
   document.querySelector("#aseHours").textContent = round(aseHours);
@@ -465,7 +525,7 @@ function renderExam(courseCount) {
 }
 
 function renderInnovative() {
-  const rows = state.teachingRows.filter((row) => row.year === effectiveCategory1Year());
+  const rows = state.teachingRows.filter((row) => row.year === activeEntryYear());
   dom.innovativeBody.innerHTML = rows
     .map((row, index) => {
       const derived = teachingDerived(row);
@@ -482,8 +542,7 @@ function renderInnovative() {
     })
     .join("");
 
-  const innovativeHours = rows.reduce((sum, row) => sum + teachingDerived(row).innovativeHours, 0);
-  const api = innovativeHours / 10;
+  const { innovativeHours, api } = calcInnovativeTotals(rows);
 
   document.querySelector("#innovativeHours").textContent = format(innovativeHours);
   document.querySelector("#innovativeApi").textContent = format(api);
@@ -493,7 +552,7 @@ function renderInnovative() {
 }
 
 function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, pointsFn, includeCount }) {
-  const rows = state[key].filter((row) => inAssessmentPeriod(row.year));
+  const rows = state[key].filter((row) => row.year === activeEntryYear());
   body.innerHTML = rows
     .map((row, index) => {
       const baseScore = row.type ? scoreMap[row.type] || 0 : 0;
@@ -529,11 +588,7 @@ function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, poi
     })
     .join("");
 
-  const total = rows.reduce((sum, row) => {
-    const score = row.type ? scoreMap[row.type] || 0 : 0;
-    const finalScore = includeCount && row.type === "GD/PI/VIVA" ? parseNumber(row.count) * score : score;
-    return sum + pointsFn(finalScore);
-  }, 0);
+  const total = calcLookupTotal(rows, scoreMap, pointsFn, includeCount);
 
   document.querySelector(scoreId).textContent = format(total);
   document.querySelector(cappedId).textContent = format(Math.min(total, cap));
@@ -541,7 +596,7 @@ function renderLookupCategory({ key, body, scoreId, cappedId, scoreMap, cap, poi
 }
 
 function renderCat3A() {
-  const rows = state.cat3ARows.filter((row) => inAssessmentPeriod(row.year));
+  const rows = state.cat3ARows.filter((row) => row.year === activeEntryYear());
   dom.cat3ABody.innerHTML = rows
     .map((row, index) => {
       const authorOptions = row.classification ? Object.keys(options.cat3A[row.classification]) : [];
@@ -573,17 +628,14 @@ function renderCat3A() {
     })
     .join("");
 
-  const total = rows.reduce((sum, row) => {
-    if (!row.classification || !row.authorType) return sum;
-    return sum + (options.cat3A[row.classification][row.authorType] || 0);
-  }, 0);
+  const total = calcCat3ATotal(rows);
 
   document.querySelector("#cat3ATotal").textContent = format(total);
   return total;
 }
 
 function renderCat3B() {
-  const rows = state.cat3BRows.filter((row) => inAssessmentPeriod(row.year));
+  const rows = state.cat3BRows.filter((row) => row.year === activeEntryYear());
   dom.cat3BBody.innerHTML = rows
     .map((row, index) => {
       const typeMap = row.category ? options.cat3B[row.category] : {};
@@ -613,10 +665,7 @@ function renderCat3B() {
     })
     .join("");
 
-  const total = rows.reduce((sum, row) => {
-    if (!row.category || !row.type) return sum;
-    return sum + (options.cat3B[row.category][row.type] || 0);
-  }, 0);
+  const total = calcCat3BTotal(rows);
 
   document.querySelector("#cat3BTotal").textContent = format(total);
   return total;
@@ -639,8 +688,7 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   const thresholds = cfg.thresholds;
   const combined = category2Grand + category3Grand;
   const category1Year = effectiveCategory1Year();
-  const assessmentEndYear = effectiveAssessmentEndYear();
-  const assessmentPeriod = priorAcademicYears(assessmentEndYear, 4);
+  const assessmentPeriod = effectiveAssessmentYears();
   const hasThresholdData = Object.values(thresholds).some((value) => value != null);
 
   document.querySelector("#selectedPolicyLabel").textContent = state.selectedPolicy;
@@ -650,7 +698,7 @@ function renderThresholdSummary(category1Grand, category2Grand, category3Grand) 
   document.querySelector("#thresholdCategory3").textContent = formatThreshold(thresholds.category3);
   document.querySelector("#thresholdCombined").textContent = formatThreshold(thresholds.combined);
   document.querySelector("#category1Scope").textContent = category1Year;
-  document.querySelector("#assessmentPeriodLabel").textContent = `${assessmentPeriod[0]} to ${assessmentPeriod[assessmentPeriod.length - 1]}`;
+  document.querySelector("#assessmentPeriodLabel").textContent = assessmentPeriod.join(", ");
   document.querySelector("#thresholdNote").textContent = `${cfg.note} Thresholds for Category 1, Category 2, Category 3, and Category 2+3 are shown according to the selected IPS and designation. Academic year is derived from the eligibility date using 1 July to 30 June.`;
 
   const checks = [];
@@ -693,21 +741,19 @@ function render() {
   if (dom.academicYear.value !== derivedYear) {
     dom.academicYear.value = derivedYear;
   }
-  if (!state.assessmentPeriodEnd) {
-    state.assessmentPeriodEnd = derivedYear;
+  if (!state.selectedAssessmentYears.length) {
+    state.selectedAssessmentYears = priorAcademicYears(derivedYear, 4);
   }
-  renderAssessmentPeriodOptions();
-  if (dom.assessmentPeriodEnd.value !== state.assessmentPeriodEnd) {
-    dom.assessmentPeriodEnd.value = state.assessmentPeriodEnd;
-  }
+  renderAssessmentYearChooser();
+  renderEntryYearChooser();
   renderDesignationControls();
   renderCapSummary();
-  const teaching = renderTeaching();
-  const validTeachingCount = state.teachingRows.filter((row) => row.year === effectiveCategory1Year() && row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
+  renderTeaching();
+  const validTeachingCount = state.teachingRows.filter((row) => row.year === activeEntryYear() && row.courseName && row.courseIn && parseNumber(row.courseHours) > 0).length;
   const exam = renderExam(validTeachingCount);
-  const innovative = renderInnovative();
+  renderInnovative();
 
-  const cat2A = renderLookupCategory({
+  renderLookupCategory({
     key: "cat2ARows",
     body: dom.cat2ABody,
     scoreId: "#cat2ATotal",
@@ -718,7 +764,7 @@ function render() {
     includeCount: false,
   });
 
-  const cat2B = renderLookupCategory({
+  renderLookupCategory({
     key: "cat2BRows",
     body: dom.cat2BBody,
     scoreId: "#cat2BTotal",
@@ -729,7 +775,7 @@ function render() {
     includeCount: true,
   });
 
-  const cat2C = renderLookupCategory({
+  renderLookupCategory({
     key: "cat2CRows",
     body: dom.cat2CBody,
     scoreId: "#cat2CTotal",
@@ -740,12 +786,28 @@ function render() {
     includeCount: false,
   });
 
-  const cat3A = renderCat3A();
-  const cat3B = renderCat3B();
+  renderCat3A();
+  renderCat3B();
 
-  const category1Grand = teaching.capped + exam.capped + innovative.capped;
-  const category2Grand = cat2A.capped + cat2B.capped + cat2C.capped;
-  const category3Grand = cat3A + cat3B;
+  const category1TeachingRows = state.teachingRows.filter((row) => row.year === effectiveCategory1Year());
+  const category1ExamRows = state.examRows.filter((row) => row.year === effectiveCategory1Year());
+  const category1Teaching = calcTeachingTotals(category1TeachingRows);
+  const category1Exam = calcExamTotals(category1TeachingRows, category1ExamRows);
+  const category1Innovative = calcInnovativeTotals(category1TeachingRows);
+  const category1Grand = category1Teaching.capped + category1Exam.capped + category1Innovative.capped;
+
+  const assessmentYears = effectiveAssessmentYears();
+  const category2ARows = state.cat2ARows.filter((row) => assessmentYears.includes(row.year));
+  const category2BRows = state.cat2BRows.filter((row) => assessmentYears.includes(row.year));
+  const category2CRows = state.cat2CRows.filter((row) => assessmentYears.includes(row.year));
+  const category3ARows = state.cat3ARows.filter((row) => assessmentYears.includes(row.year));
+  const category3BRows = state.cat3BRows.filter((row) => assessmentYears.includes(row.year));
+
+  const category2A = Math.min(calcLookupTotal(category2ARows, options.cat2A, (score) => score / 10, false), caps.category2A);
+  const category2B = Math.min(calcLookupTotal(category2BRows, options.cat2B, (score) => score / 10, true), caps.category2B);
+  const category2C = Math.min(calcLookupTotal(category2CRows, options.cat2C, (score) => score / 10, false), caps.category2C);
+  const category2Grand = category2A + category2B + category2C;
+  const category3Grand = calcCat3ATotal(category3ARows) + calcCat3BTotal(category3BRows);
 
   document.querySelector("#category1Grand").textContent = format(category1Grand);
   document.querySelector("#category2Grand").textContent = format(category2Grand);
@@ -785,13 +847,9 @@ dom.designationSelect.addEventListener("change", (event) => {
 });
 dom.eligibilityDate.addEventListener("change", (event) => {
   state.eligibilityDate = event.target.value;
-  if (!state.assessmentPeriodEnd) {
-    state.assessmentPeriodEnd = academicYearFromDate(event.target.value);
+  if (!state.selectedAssessmentYears.length) {
+    state.selectedAssessmentYears = priorAcademicYears(academicYearFromDate(event.target.value), 4);
   }
-  render();
-});
-dom.assessmentPeriodEnd.addEventListener("change", (event) => {
-  state.assessmentPeriodEnd = event.target.value;
   render();
 });
 
@@ -817,6 +875,30 @@ document.body.addEventListener("change", (event) => {
 });
 
 document.body.addEventListener("click", (event) => {
+  const assessmentChip = event.target.closest("[data-assessment-year]");
+  if (assessmentChip) {
+    const year = assessmentChip.dataset.assessmentYear;
+    const selected = new Set(state.selectedAssessmentYears);
+    if (selected.has(year)) {
+      selected.delete(year);
+    } else if (selected.size < 4) {
+      selected.add(year);
+    } else {
+      selected.delete([...selected].sort((a, b) => yearStart(a) - yearStart(b))[0]);
+      selected.add(year);
+    }
+    state.selectedAssessmentYears = [...selected].sort((a, b) => yearStart(a) - yearStart(b));
+    render();
+    return;
+  }
+
+  const entryChip = event.target.closest("[data-entry-year]");
+  if (entryChip) {
+    state.activeEntryYear = entryChip.dataset.entryYear;
+    render();
+    return;
+  }
+
   const button = event.target.closest("[data-remove-key][data-remove-id]");
   if (!button) return;
   removeRow(button.dataset.removeKey, button.dataset.removeId);
