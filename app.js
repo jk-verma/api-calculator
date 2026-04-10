@@ -235,6 +235,11 @@ const state = {
   cat3BRows: [],
 };
 
+const academicYears = Array.from({ length: 30 }, (_, index) => {
+  const start = 2021 + index;
+  return `${start}-${String(start + 1).slice(-2)}`;
+});
+
 const dom = {
   policySelect: document.querySelector("#policySelect"),
   designationSelect: document.querySelector("#designationSelect"),
@@ -254,6 +259,13 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 function currentYear() {
   return dom.academicYear.value;
+}
+
+function renderAcademicYearOptions() {
+  const selected = dom.academicYear.value || state.eligibilityDate || academicYears[0];
+  dom.academicYear.innerHTML = academicYears
+    .map((year) => `<option value="${year}" ${year === selected ? "selected" : ""}>${year}</option>`)
+    .join("");
 }
 
 function yearStart(yearLabel) {
@@ -653,6 +665,7 @@ function renderCapSummary() {
 }
 
 function render() {
+  renderAcademicYearOptions();
   renderDesignationControls();
   if (dom.eligibilityDate.value !== state.eligibilityDate) {
     state.eligibilityDate = dom.eligibilityDate.value;
